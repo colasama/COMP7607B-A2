@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from torch import nn
 from transformers import PreTrainedModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
+import math
 
 from .config import LMConfig
 
@@ -26,6 +27,9 @@ class RMSNorm(torch.nn.Module):
             torch.Tensor: Normalized tensor of the same shape as x
         """
         # Write your code here
+        def _norm(x):
+            return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+        return self.weight * _norm(x.float()).type_as(x)
 
 
 def precompute_pos_cis(dim: int, end: int = int(32 * 1024), theta: float = 1e6):
@@ -129,7 +133,14 @@ class Attention(nn.Module):
 
         # Implement attention
         # Write your code here
-
+        attn_scores = (xq @ xk.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        attn_scores = attn_scores + self.mask[:, :, :seq_len, :seq_len]
+        attn_weights = F.softmax(attn_scores, dim=-1)
+        attn_weights = self.attn_dropout(attn_weights)
+        hidden_states = torch.matmul(attn_weights, xv)
+        hidden_states = hidden_states.transpose(1, 2).contiguous().view(bsz, seq_len, -1)
+        output = self.resid_dropout(self.wo(hidden_states))
+        
         return output, past_kv
 
 

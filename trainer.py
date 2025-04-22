@@ -44,6 +44,9 @@ def dpo_loss(ref_probs: torch.Tensor, probs: torch.Tensor, mask: torch.Tensor, b
 
     # Calculate loss
     # Write Your Code Here
+    diff = (chosen_probs - chosen_ref_probs) - (reject_probs - reject_ref_probs)
+    logits = beta * diff
+    loss = -F.logsigmoid(logits)
 
     return loss.mean()
 
