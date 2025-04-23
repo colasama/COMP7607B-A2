@@ -6,6 +6,9 @@ import torch
 from trainer import SFTTrainer
 from utils import set_random_seeds
 
+import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"]= "expandable_segments:True"
+
 warnings.filterwarnings("ignore")
 
 
